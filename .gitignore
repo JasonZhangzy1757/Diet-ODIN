@@ -1,0 +1,10 @@
+
+# Ignore everything in the data directory
+data/*
+# Except the .gitkeep file
+!data/.gitkeep
+
+# Ignore everything in the processed_data directory
+processed_data/*
+# Except the .gitkeep file
+!processed_data/.gitkeep
