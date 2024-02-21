@@ -8,7 +8,7 @@ import wandb
 
 def main():
     if args.use_wandb:
-        run = wandb.init(project='ablation_only_b_244_3')
+        run = wandb.init(project='')
         config = wandb.config
         SEED = config.seed
         LR = config.lr
@@ -212,20 +212,20 @@ if __name__ == '__main__':
                         help='Number of epochs to train.')
     parser.add_argument('--lr', type=float, default=1e-3,
                         help='Initial learning rate.')
-    parser.add_argument('--weight_decay', type=float, default=1e-2,
+    parser.add_argument('--weight_decay', type=float, default=0,
                         help='Weight decay (L2 loss on parameters).')
     parser.add_argument('--hidden_dim', type=int, default=256,
                         help='Number of hidden dimension.')
     parser.add_argument('--dropout', type=float, default=0.6,
                         help='Dropout rate (1 - keep probability).')
-    parser.add_argument('--use_wandb', type=bool, default=True,
+    parser.add_argument('--use_wandb', type=bool, default=False,
                         help='whether to use wandb for a sweep.')
-    parser.add_argument('--model_type', type=str, default='HGT',
+    parser.add_argument('--model_type', type=str, default='GCN',
                         help='The baseline model to use.')
     args = parser.parse_args()
 
     if args.use_wandb:
-        wandb.login(key='2a0863bcb6510c5d64bb4c57e14b278e8fbe3fb6')
+        wandb.login(key='USE_YOUR_WANDB_KEY')
         sweep_config = {
             'name': 'sweep-try-edge-prediction',
             'method': 'grid',
@@ -233,11 +233,11 @@ if __name__ == '__main__':
                 'lr': {'values': [1e-3]},
                 'hidden_dim': {'values': [256]},
                 'dropout': {'values': [0.6]},
-                'weight_decay': {'values': [1e-2]},
+                'weight_decay': {'values': [0]},
                 'seed': {'values': [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]}
             }
         }
-        sweep_id = wandb.sweep(sweep_config, entity='jasonzhangzy1920', project='ablation_only_b_244_3')
+        sweep_id = wandb.sweep(sweep_config, entity='jasonzhangzy1920', project='')
         wandb.agent(sweep_id, function=main)
     else:
         main()

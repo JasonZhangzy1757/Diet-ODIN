@@ -1,5 +1,6 @@
 import torch.nn as nn
-from utils import *
+import sys
+sys.path.append('..')  # Add the parent folder to the import pathfrom utils import *
 from sklearn.metrics import f1_score, roc_auc_score, accuracy_score, precision_score, recall_score
 from models import *
 import argparse
@@ -9,7 +10,7 @@ import pickle
 
 def main():
     if args.use_wandb:
-        run = wandb.init(project='ablation_without_c_244')
+        run = wandb.init(project='')
         config = wandb.config
         SEED = config.seed
         LR = config.lr
@@ -210,7 +211,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.use_wandb:
-        wandb.login(key='2a0863bcb6510c5d64bb4c57e14b278e8fbe3fb6')
+        wandb.login(key='USE YOUR OWN KEY HERE')
         sweep_config = {
             'name': 'sweep-try-edge-prediction',
             'method': 'grid',
@@ -224,7 +225,7 @@ if __name__ == '__main__':
                 'seed': {'values': [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]}
             }
         }
-        sweep_id = wandb.sweep(sweep_config, entity='jasonzhangzy1920', project='ablation_without_c_244')
+        sweep_id = wandb.sweep(sweep_config, entity='', project='')
         wandb.agent(sweep_id, function=main)
     else:
         main()

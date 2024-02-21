@@ -14,13 +14,11 @@ import torch_geometric.transforms as T
 from torch_geometric.utils.hetero import construct_bipartite_edge_index
 import math
 from torch_geometric.utils import softmax
-import pickle
 
 
 class AttHGT(torch.nn.Module):
     def __init__(self, graph, refined_graph, hidden_dim, num_classes, num_heads=4, num_layers=1, dropout=0.6):
         super().__init__()
-        # HGT Setup
         self.lin_dict = torch.nn.ModuleDict()
         for node_type in graph.node_types:
             self.lin_dict[node_type] = Linear(-1, hidden_dim)
@@ -29,22 +27,19 @@ class AttHGT(torch.nn.Module):
             conv = HGTConv_withAtt(hidden_dim, hidden_dim, graph.metadata(),
                                    num_heads, group='sum')
             self.convs.append(conv)
-        # HAN Setup
-        self.han_conv = HANConv(-1, hidden_dim, heads=num_heads,
+        self.han_conv = HANConv(-1, 64, heads=num_heads,
                                 dropout=0.6, metadata=refined_graph.metadata())
-        # Pooling Setup
-        self.lin = nn.Linear(hidden_dim * 2, hidden_dim)
+        self.lin = nn.Linear(hidden_dim + 64, hidden_dim)
 
-        # Edge Prediction Setup
         self.lin1 = nn.Linear(hidden_dim * 2, hidden_dim)
         self.lin2 = nn.Linear(hidden_dim, num_classes)
         self.dropout = dropout
+        
+        # Ablation_without_c
+        # self.direct = nn.Linear(hidden_dim, num_classes)
 
     def forward(self, x_dict, edge_index_dict, x_dict_refined, edge_index_dict_refined):
-        # HAN layer part
         x_dict_refined = self.han_conv(x_dict_refined, edge_index_dict_refined)
-
-        # HGT layer part
         x_dict = {
             node_type: self.lin_dict[node_type](x).relu_()
             for node_type, x in x_dict.items()
@@ -54,99 +49,17 @@ class AttHGT(torch.nn.Module):
             x_dict, attn_score = conv(x_dict, edge_index_dict)
             attn_score_list.append(attn_score)
 
-        # Pooling Part
         x_embedding = torch.cat([x_dict['user'], x_dict_refined['user']], dim=1)
         x_embedding = self.lin(x_embedding)
+        
+        # Ablation: Without a
+        # x_embedding = x_dict['user']
+        
+        # Ablation: without c
+        # x_embedding = self.direct(x_embedding)
+        
 
         return x_embedding, attn_score_list
-
-    class AttHGT(torch.nn.Module):
-        def __init__(self, graph, refined_graph, hidden_dim, num_classes, num_heads=4, num_layers=1, dropout=0.6):
-            super().__init__()
-            # HGT Setup
-            self.lin_dict = torch.nn.ModuleDict()
-            for node_type in graph.node_types:
-                self.lin_dict[node_type] = Linear(-1, hidden_dim)
-            self.convs = torch.nn.ModuleList()
-            for _ in range(num_layers):
-                conv = HGTConv_withAtt(hidden_dim, hidden_dim, graph.metadata(),
-                                       num_heads, group='sum')
-                self.convs.append(conv)
-            # HAN Setup
-            self.han_conv = HANConv(-1, hidden_dim, heads=num_heads,
-                                    dropout=0.6, metadata=refined_graph.metadata())
-            # Pooling Setup
-            self.lin = nn.Linear(hidden_dim * 2, hidden_dim)
-
-            # Edge Prediction Setup
-            self.lin1 = nn.Linear(hidden_dim * 2, hidden_dim)
-            self.lin2 = nn.Linear(hidden_dim, num_classes)
-            self.dropout = dropout
-
-        def forward(self, x_dict, edge_index_dict, x_dict_refined, edge_index_dict_refined):
-            # HAN layer part
-            x_dict_refined = self.han_conv(x_dict_refined, edge_index_dict_refined)
-
-            # HGT layer part
-            x_dict = {
-                node_type: self.lin_dict[node_type](x).relu_()
-                for node_type, x in x_dict.items()
-            }
-            attn_score_list = []
-            for conv in self.convs:
-                x_dict, attn_score = conv(x_dict, edge_index_dict)
-                attn_score_list.append(attn_score)
-
-            # Pooling Part
-            x_embedding = torch.cat([x_dict['user'], x_dict_refined['user']], dim=1)
-            x_embedding = self.lin(x_embedding)
-
-            return x_embedding, attn_score_list
-
-
-class AttHGT_noHGT(torch.nn.Module):
-    def __init__(self, graph, refined_graph, hidden_dim, num_classes, num_heads=4, num_layers=1, dropout=0.6):
-        super().__init__()
-        # HGT Setup
-        self.lin_dict = torch.nn.ModuleDict()
-        for node_type in graph.node_types:
-            self.lin_dict[node_type] = Linear(-1, hidden_dim)
-        self.convs = torch.nn.ModuleList()
-        for _ in range(num_layers):
-            conv = HGTConv_withAtt(hidden_dim, hidden_dim, graph.metadata(),
-                                   num_heads, group='sum')
-            self.convs.append(conv)
-        # HAN Setup
-        self.han_conv = HANConv(-1, hidden_dim, heads=num_heads,
-                                dropout=0.6, metadata=refined_graph.metadata())
-        # Pooling Setup
-        self.lin = nn.Linear(hidden_dim, hidden_dim)
-
-        # Edge Prediction Setup
-        self.lin1 = nn.Linear(hidden_dim * 2, hidden_dim)
-        self.lin2 = nn.Linear(hidden_dim, num_classes)
-        self.dropout = dropout
-
-    def forward(self, x_dict, edge_index_dict, x_dict_refined, edge_index_dict_refined):
-        # HAN layer part
-        x_dict_refined = self.han_conv(x_dict_refined, edge_index_dict_refined)
-
-        # # HGT layer part
-        # x_dict = {
-        #     node_type: self.lin_dict[node_type](x).relu_()
-        #     for node_type, x in x_dict.items()
-        # }
-        # attn_score_list = []
-        # for conv in self.convs:
-        #     x_dict, attn_score = conv(x_dict, edge_index_dict)
-        #     attn_score_list.append(attn_score)
-
-        # Pooling Part
-        # x_embedding = torch.cat([x_dict['user'], x_dict_refined['user']], dim=1)
-        x_embedding = x_dict_refined['user']
-        x_embedding = self.lin(x_embedding)
-
-        return x_embedding, 0
 
     def edge_pair_forward(self, edge_index, x):
         src, dst = edge_index
@@ -351,7 +264,7 @@ class HeteroGraphClassificationModel(torch.nn.Module):
 
 
 class GAT(torch.nn.Module):
-    def __init__(self, num_features, hidden_dim, num_classes, num_heads=1, dropout=0.6):
+    def __init__(self, num_features, hidden_dim, num_classes, num_heads=8, dropout=0.6):
         super(GAT, self).__init__()
         self.conv1 = GATConv(num_features, hidden_dim, heads=num_heads)
         self.conv2 = GATConv(hidden_dim * num_heads, num_classes, heads=1, concat=False)
@@ -380,7 +293,7 @@ class RGCN(torch.nn.Module):
         self.conv2 = RGCNConv(hidden_dim, num_classes, num_relations)
         self.dropout = dropout
 
-    def forward(self, x_dict, edge_index, edge_type, return_embedding=False):
+    def forward(self, x_dict, edge_index, edge_type):
         x_dict = {key: x.to(torch.float32) for key, x in x_dict.items()}
         # Initial transformations
         x_user = self.init_user(x_dict['user'])
@@ -395,9 +308,6 @@ class RGCN(torch.nn.Module):
         # RGCN layers
         x = self.conv1(x_all, edge_index, edge_type)
         x = F.relu(x)
-
-        if return_embedding:
-            return x
         x = F.dropout(x, training=self.training, p=self.dropout)
         x = self.conv2(x, edge_index, edge_type)
 
@@ -445,10 +355,8 @@ class GCN(torch.nn.Module):
     def forward(self, x, edge_index, return_embedding=False):
         x = self.conv1(x, edge_index)
         x = F.relu(x)
-
         if return_embedding:
             return x
-
         x = F.dropout(x, training=self.training, p=self.dropout)
         x = self.conv2(x, edge_index)
         return F.log_softmax(x, dim=1)

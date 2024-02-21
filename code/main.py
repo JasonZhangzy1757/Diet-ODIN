@@ -10,7 +10,7 @@ from sklearn.metrics import normalized_mutual_info_score, adjusted_rand_score
 
 def main():
     if args.use_wandb:
-        run = wandb.init(project='real_result_433')
+        run = wandb.init(project='')
         config = wandb.config
         SEED = config.seed
         LR = config.lr
@@ -30,6 +30,12 @@ def main():
         NUM_HEADS = args.num_heads
         NUM_LAYERS = args.num_layers
 
+    if args.split == '244':
+       test_val_size=0.8
+    elif args.split == '433':
+         test_val_size=0.6
+    else:
+        raise ValueError('Unknown split type') 
     set_seed(SEED)
     graph = torch.load('../processed_data/heterogeneous_graph_768_no_med_balanced_with_prompt.pt')
 
@@ -48,7 +54,7 @@ def main():
 
     # Back to the original code
     user_pair_edge_index = edge_concat(UFU_edge_list, UHU_edge_list)
-    train_edge_index, val_edge_index, test_edge_index = split_edges(graph, user_pair_edge_index, test_val_size=0.8)
+    train_edge_index, val_edge_index, test_edge_index = split_edges(graph, user_pair_edge_index, test_val_size=test_val_size)
     train_labels = get_labels(graph, train_edge_index)
     val_labels = get_labels(graph, val_edge_index)
     test_labels = get_labels(graph, test_edge_index)
@@ -159,13 +165,14 @@ def main():
         if args.use_wandb:
             wandb.log({'edge_f1_test': f1_test})
     
-    final_layer_attention_scores = {}
-    for key, value in attention_scores[-1].items():
-        key = key.cpu().detach()
-        final_layer_attention_scores[key] = value
+    if args.return_attentions:
+        final_layer_attention_scores = {}
+        for key, value in attention_scores[-1].items():
+            key = key.cpu().detach()
+            final_layer_attention_scores[key] = value
 
-    # with open('../processed_data/attention_scores.pkl', 'wb') as f:
-    #     pickle.dump(final_layer_attention_scores, f)
+        with open('../processed_data/attention_scores.pkl', 'wb') as f:
+            pickle.dump(final_layer_attention_scores, f)
     
     
     # Opioid User Prediction Phase
@@ -180,7 +187,7 @@ def main():
     node_features, edge_index, user_labels = \
         refined_graph['user'].features, refined_graph[('user', 'share_same_food', 'user')].edge_index, refined_graph['user'].y
     train_indices, val_indices, test_indices, train_labels, val_labels, test_labels, weights = \
-        set_split(user_labels, balanced_test=False, test_val_size=0.8)
+        set_split(user_labels, balanced_test=False, test_val_size=test_val_size)
 
     model = GCN(num_features=node_features.size(1),
                 num_classes=2,
@@ -273,7 +280,7 @@ def main():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--seed', type=int, default=47,
+    parser.add_argument('--seed', type=int, default=42,
                         help='Random seed.')
     parser.add_argument('--epochs', type=int, default=100,
                         help='Number of epochs to train.')
@@ -295,10 +302,14 @@ if __name__ == '__main__':
                         help='number of layers in HGT')
     parser.add_argument('--return_embeddings', type=bool, default=False,
                         help='Whether to return the embeddings')
+    parser.add_argument('--return_attentions', type=bool, default=False,
+                        help='Whether to return the attention weights.')
+    parser.add_argument('--split', type=str, default='244',
+                        help='Whether to use the 244 split or 433 split.')
     args = parser.parse_args()
 
     if args.use_wandb:
-        wandb.login(key='2a0863bcb6510c5d64bb4c57e14b278e8fbe3fb6')
+        wandb.login(key='USE YOUR OWN KEY HERE')
         sweep_config = {
             'name': 'sweep-try-edge-prediction',
             'method': 'grid',
@@ -312,7 +323,7 @@ if __name__ == '__main__':
                 'seed': {'values': [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]}
             }
         }
-        sweep_id = wandb.sweep(sweep_config, entity='jasonzhangzy1920', project='real_result_433')
+        sweep_id = wandb.sweep(sweep_config, entity='', project='')
         wandb.agent(sweep_id, function=main)
     else:
         main()

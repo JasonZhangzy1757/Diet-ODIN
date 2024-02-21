@@ -4,3 +4,11 @@ data/*
 
 # Ignore everything in the processed_data directory
 processed_data/*
+# System files
+desktop.ini
+
+# Python bytecode
+__pycache__/
+
+# macOS system files
+.DS_Store
