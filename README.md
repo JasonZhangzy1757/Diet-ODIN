@@ -1,6 +1,6 @@
 # Diet-ODIN
 
-This repo is the source code of the paper "Diet-ODIN: A Novel Framework for Opioid Misuse Detection with Interpretable Dietary Patterns" Check our paper here, and check our proof-of-concept system demo here (Maintaining, back online soon).
+This repo is the source code of the paper "Diet-ODIN: A Novel Framework for Opioid Misuse Detection with Interpretable Dietary Patterns" Check our paper here, and check our proof-of-concept system demo [here](50.116.62.222:81).
 
 ## Environment Settings
 
