@@ -33,6 +33,14 @@ python main.py
 ```
 
 ## Citation
-
+```
+@inproceedings{zhang2024diet,
+  title={Diet-ODIN: A Novel Framework for Opioid Misuse Detection with Interpretable Dietary Patterns},
+  author={Zhang, Zheyuan and Wang, Zehong and Hou, Shifu and Hall, Evan and Bachman, Landon and White, Jasmine and Galassi, Vincent and Chawla, Nitesh V and Zhang, Chuxu and Ye, Yanfang},
+  booktitle={Proceedings of the 30th ACM SIGKDD Conference on Knowledge Discovery and Data Mining},
+  pages={6312--6323},
+  year={2024}
+}
+```
 ## Contact
 If you have any questions, don't hesitate to reach out. (zzhang42@nd.edu) 
